@@ -1,4 +1,4 @@
-import gi, threading, time#, nfcReader
+import gi, threading, time, requests#, nfcReader
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk,Gdk
 
@@ -69,8 +69,28 @@ class Login(Gtk.Box):
     def onError(self, button) :
         self.label.set_text("Error")
         
-    # def nfcThread(self) :
-        
+     
+class Query(Gtk.Box):#aqui tot per fer consultes
+    def __init__(self, parent_window):
+        Gtk.Box.__init__(self, spacing=10)
+        self.parent_window = parent_window
+        self.entry = Gtk.Entry(label="query")
+        self.button = Gtk.Button(label="Send")
+        self.button.connect("clicked", self.onSendClicked)
+        self.add(self.entry)
+        self.add(self.button)
+
+    def onSendClicked(self, button) {
+        thread = threading.Thread(target=httpThread,self, self.Entry.get_text())
+        thread.daemon = True
+        thread.start()
+
+    }
+    
+    def httpThread(self, query) :
+       # args = { 'nom1' : 'guifre', 'nom2' : 'victor' }
+        res = requests.get("https://postman-echo.com/get/" + query)
+        print(res.json())
     #     #rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
     #     #self.label.set_text("UID: " + rf.read_uid())
     #     self.style_provider.load_from_data(self.red)
@@ -83,12 +103,6 @@ class Login(Gtk.Box):
     #     self.hide()
     #     #else: mostrem missatge d'error (pero on?)
         
-class Query(Gtk.Box):#aqui tot per fer consultes
-    def __init__(self, parent_window):
-        Gtk.Box.__init__(self, spacing=10)
-        self.parent_window = parent_window
-        self.label = Gtk.Label(label="query")
-        self.add(self.label)
         #sha de tenir en compte que cridem del pal table?constraint&constraint&...
         #hauriem de fer un if per quan introduim cosillas(tasks, timetables, marks)
         #les cosillas han destar ordenades (notes->assignatura, treballs->data, horaris->data)
