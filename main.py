@@ -136,6 +136,37 @@ class Query(Gtk.Box):#aqui tot per fer consultes
 #                 ["icom","guifre","4"],
 #                 ["dsbm", "victor", "8"]
 #             ]}
+        # append the values in the model
+        for i in range(len(rows)):
+            listmodel.append(rows[i])
+        # a treeview to see the data stored in the model
+        view = Gtk.TreeView(model=listmodel)
+        # for each column
+        for i, column in enumerate(columns):
+            # cellrenderer to render the text
+            cell = Gtk.CellRendererText()
+            # the column is created
+            col = Gtk.TreeViewColumn(column, cell, text=i)
+            # and it is appended to the treeview
+            view.append_column(col)
+        grid = Gtk.Grid()
+        grid.attach(view, 0, 0, 1, 1)
+        #grid.attach(self.label, 0, 1, 1, 1)    
+        self.add(grid)
+
+    
+    def process_query(self, widget):
+        thread = threading.Thread(target=self.httpThread)
+        thread.daemon = True
+        thread.start()
+        
+    def httpThread(self) :
+        #res = requests.get("https://postman-echo.com/get/" + self.entry.get_text())
+        res = "{'tableName' : 'timetables', 'rows' : [['icom','guifre','4'],['dsbm', 'victor', '8']]}"
+        createTable(self,res.json()["tableName"],res.json()["rows"])
+
+        
+if __name__ == "__main__" :
             
         
     
