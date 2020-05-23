@@ -1,4 +1,4 @@
-import gi, threading, time, requests#, nfcReader, i2c
+import gi, threading, time, requests, json#, nfcReader, i2c
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk,Gdk
 
@@ -140,7 +140,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         for i in range(len(rows)):
             listmodel.append(rows[i])
         # a treeview to see the data stored in the model
-        view = Gtk.TreeView(model=listmodel)
+        self.view = Gtk.TreeView(model=listmodel)
         # for each column
         for i, column in enumerate(columns):
             # cellrenderer to render the text
@@ -148,11 +148,13 @@ class Query(Gtk.Box):#aqui tot per fer consultes
             # the column is created
             col = Gtk.TreeViewColumn(column, cell, text=i)
             # and it is appended to the treeview
-            view.append_column(col)
-        grid = Gtk.Grid()
-        grid.attach(view, 0, 0, 1, 1)
+            self.view.append_column(col)
+        self.grid = Gtk.Grid()
+        self.grid.attach(self.view, 0, 0, 1, 1)
         #grid.attach(self.label, 0, 1, 1, 1)    
-        self.add(grid)
+        self.add(self.grid)
+        self.grid.show_all()
+        
 
     
     def process_query(self, widget):
@@ -160,24 +162,14 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         thread.daemon = True
         thread.start()
         
-    def httpThread(self) :
-        #res = requests.get("https://postman-echo.com/get/" + self.entry.get_text())
-        res = "{'tableName' : 'timetables', 'rows' : [['icom','guifre','4'],['dsbm', 'victor', '8']]}"
-        createTable(self,res.json()["tableName"],res.json()["rows"])
+    def httpThread(self):
+#         res = requests.get("https://<server_nostre>/" + self.entry.get_text())
+#         self.createTable(self,res.json()["tableName"],res.json()["rows"])
 
-        
-if __name__ == "__main__" :
-            
-        
-    
-    def process_query(self, widget):
-        thread = threading.Thread(target=self.httpThread)
-        thread.daemon = True
-        thread.start()
-        
-    def httpThread(self) :
-        res = requests.get("https://postman-echo.com/get/" + self.entry.get_text())
-        createTable(self,res.json()["tableName"],res.json()["rows"])
+        # Per fer proves sense server.
+        res = '{"tableName" : "marks", "rows" : [["icom","guifre","4"],["dsbm", "victor", "8"]]}'
+        eljeison = json.loads(res)
+        self.createTable(eljeison["tableName"],eljeison["rows"])
 
         
 if __name__ == "__main__" :
