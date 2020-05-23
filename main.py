@@ -116,13 +116,28 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         self.parent_window = parent_window
         self.label = Gtk.Label(label="Welcome", xalign=0)#+student_name
         self.add(self.label)
-        self.create_query()
-         
-    def create_query(self):
         self.entry = Gtk.Entry()
         self.entry.set_text("table?constraint&constraint..")#aqui podem ficar el format que volem
         self.add(self.entry)
         self.entry.connect("activate", self.process_query)
+        
+    def createTable(self, tableName, rows) :
+        if(tableName == "timetables") :
+            columns = ["day", "hour", "subject", "room"]
+            listmodel = Gtk.ListStore(str, str, str, str)
+        if(tableName == "tasks"):
+            columns = ["date", "subject", "name"]
+            listmodel = Gtk.ListStore(str, str, str)
+        if(tableName == "marks"):
+            columns = ["subject", "name", "mark"]
+            listmodel = Gtk.ListStore(str, str, str)
+#             {"tableName" : "timetables",
+#              "rows" : [
+#                 ["icom","guifre","4"],
+#                 ["dsbm", "victor", "8"]
+#             ]}
+            
+        
     
     def process_query(self, widget):
         thread = threading.Thread(target=self.httpThread)
@@ -131,7 +146,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         
     def httpThread(self) :
         res = requests.get("https://postman-echo.com/get/" + self.entry.get_text())
-        print(res.json())
+        createTable(self,res.json()["tableName"],res.json()["rows"])
 
         
 if __name__ == "__main__" :
