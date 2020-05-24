@@ -1,0 +1,14 @@
+#login {
+      background-color: blue;
+      border-radius: 10px;
+      color:white;
+}
+#loginError {
+      background-color: red;
+      border-radius: 10px;
+      color:white;
+ }
+#studentName{
+	color:blue;
+ }
+       

@@ -5,73 +5,45 @@ from gi.repository import Gtk,Gdk
 
 class Window(Gtk.Window) :
     def __init__(self) :
-        Gtk.Window.__init__(self, title="COURSE MANAGER")
-        
+        Gtk.Window.__init__(self, title="MIRO CONNECTIVITY")
+        self.set_default_size(500, 300)
         container=Gtk.Box()
         self.add(container)
         container.show()
         
         self.login=Login(self)
         self.query=Query(self)
-        container.add(self.login)
-        container.add(self.query)
+        container.pack_start(self.login, True, True, 0)
+        container.pack_start(self.query, True, True, 0)
         self.login.show_all()
-
-class Login(Gtk.Box):
-    def __init__(self, parent_window):
-        Gtk.Box.__init__(self, spacing=10)
-        self.parent_window = parent_window
-        # Creem un container vertical box:
-        self.vBox = Gtk.VBox(spacing=6)
-        self.add(self.vBox)
         
-        # Afegim el label en un event box:
-        self.evBox = Gtk.EventBox()
-        self.evBox.set_size_request(400,100)
-        self.evBox.set_name("eBox")
-        self.label = Gtk.Label(label="Please, login with your university card")
-        self.label.set_name("label")
-        self.evBox.add(self.label)
-        self.vBox.pack_start(self.evBox,True,True,6)
-        
-        self.button = Gtk.Button(label="SignIn")
-        self.button.connect("clicked", self.onProva)
-        self.vBox.pack_start(self.button,True,True,6)
-
-        self.button = Gtk.Button(label="Error")
-        self.button.connect("clicked", self.onError)
-        self.vBox.pack_start(self.button,True,True,6)
-        
-        # Creem 2 estils amb CSS:
-        self.blue = b"""
-        #eBox {
-            background-color: blue;
-            border-radius: 10px;
-        }
-        """
-        self.red = b"""
-        #eBox {
-            background-color: red;
-            border-radius: 10px;
-        }
-        """
-        self.white_type= b"""
-        #label{
-            color:white;
-        }
-        """
         self.style_provider = Gtk.CssProvider()
-        self.style_provider.load_from_data(self.blue)
+        self.style_provider.load_from_path('estilitzat.css')
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), self.style_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
-        self.style_provider = Gtk.CssProvider()
-        self.style_provider.load_from_data(self.white_type)
-        Gtk.StyleContext.add_provider_for_screen(
-           Gdk.Screen.get_default(), self.style_provider,
-           Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-       )
+
+class Login(Gtk.Box):
+    def __init__(self, parent_window):
+        Gtk.Box.__init__(self, spacing=30)
+        self.parent_window = parent_window
+        # Creem un container vertical box:
+        self.vBox = Gtk.VBox(spacing=50)
+        self.pack_start(self.vBox, True, False, 50)
+        
+        self.login=Gtk.Button(label="Please, login with your university card")
+        self.login.set_name("login")
+        self.login.set_property("width-request", 200)
+        self.login.set_property("height-request", 50)
+        self.login.connect("clicked", self.onProva)#per fer proves sense nfc
+        self.vBox.pack_start(self.login,True,False,0)
+
+        #aixo quan hi ha el nfc no es posa
+        self.button = Gtk.Button(label="Error")
+        self.button.connect("clicked", self.onError)
+        self.vBox.pack_start(self.button,True,True,6)
+        
         
         
     def onProva(self, button) :#això és per fer proves i s'haurà de canviar per la lectura del nfc
@@ -80,46 +52,43 @@ class Login(Gtk.Box):
         self.parent_window.query.show_all()
     
     def onError(self,button) :
-        self.label.set_text("Your ID is not in our list. Please try again")
+        self.login.set_label("Your ID is not in our list. Please try again")
+        self.login.set_name('loginError')
         #threading.Thread(target=self.nfcThread, daemon=True).start()
-        self.style_provider = Gtk.CssProvider()
-        self.style_provider.load_from_data(self.white_type)
-        Gtk.StyleContext.add_provider_for_screen(
-           Gdk.Screen.get_default(), self.style_provider,
-           Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-       )
         
-        self.style_provider.load_from_data(self.red)
-        Gtk.StyleContext.add_provider_for_screen(
-           Gdk.Screen.get_default(), self.style_provider,
-           Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-       )
-
-    # def nfcThread(self) :
-        
-#     #rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
-#     #self.label.set_text("UID: " + rf.read_uid())
-#     self.style_provider.load_from_data(self.red)
-#     Gtk.StyleContext.add_provider_for_screen(
-#         Gdk.Screen.get_default(), self.style_provider,
-#         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-#     )
-#     #aqui aniria algo del pal si el id llegit esta dintre de student:
-#     self.hide()
-#   self.parent_window.query.show_all()
-#     #else: mostrem missatge d'error (pero on?) i activem funció on error
+    
+#    def nfcThread(self) :  
+#        rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
+#        if rf.read_uid().isIn(student):#encara no se com sera la bd
+#           self.hide()
+#           self.parent_window.query.show_all()
+#        else:
+#           self.login.set_label("Your ID is not in our list. Please try again")
+#           self.login.set_name('loginError')
+#           threading.Thread(target=self.nfcThread, daemon=True).start()
         
 class Query(Gtk.Box):#aqui tot per fer consultes
     def __init__(self, parent_window):
-        Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        self.set_size_request(400,100)
+        Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=30)
         self.parent_window = parent_window
-        self.label = Gtk.Label(label="Welcome", xalign=0)#+student_name
-        self.add(self.label)
+        
+        self.hBox = Gtk.HBox(spacing=5)
+        self.add(self.hBox)
+        self.label = Gtk.Label(label="Welcome", xalign=0)
+        self.studentName = Gtk.Label(label="Marina Preciosa")
+        self.studentName.set_name('studentName')
+        self.hBox.pack_start(self.label, False, True, 0)
+        self.hBox.pack_start(self.studentName, False, True, 0)
+        self.button = Gtk.Button(label="Log Out")
+        self.button.connect("clicked", self.onLogOut)
+        self.hBox.add(self.button)
+        self.hBox.set_child_packing(self.button,False,True,0,1)
         self.entry = Gtk.Entry()
-        self.entry.set_text("table?constraint&constraint..")#aqui podem ficar el format que volem
+        self.entry.set_has_frame(True)
+        #self.entry.set_text("table?constraint&constraint..")#aqui podem ficar el format que volem
         self.add(self.entry)
-        self.entry.connect("activate", self.process_query)
+        self.entry.connect("activate", self.processQuery)
+        
         
     def createTable(self, tableName, rows) :
         if(tableName == "timetables") :
@@ -141,23 +110,25 @@ class Query(Gtk.Box):#aqui tot per fer consultes
             listmodel.append(rows[i])
         # a treeview to see the data stored in the model
         self.view = Gtk.TreeView(model=listmodel)
+        self.view.set_hexpand(True)
         # for each column
         for i, column in enumerate(columns):
             # cellrenderer to render the text
             cell = Gtk.CellRendererText()
             # the column is created
             col = Gtk.TreeViewColumn(column, cell, text=i)
+            col.set_expand(True)
             # and it is appended to the treeview
             self.view.append_column(col)
         self.grid = Gtk.Grid()
-        self.grid.attach(self.view, 0, 0, 1, 1)
-        #grid.attach(self.label, 0, 1, 1, 1)    
         self.add(self.grid)
+        self.grid.attach(self.view, 0, 0, 1, 1)
+        
+        #grid.attach(self.label, 0, 1, 1, 1)   
         self.grid.show_all()
         
-
-    
-    def process_query(self, widget):
+        
+    def processQuery(self, widget):
         thread = threading.Thread(target=self.httpThread)
         thread.daemon = True
         thread.start()
@@ -170,7 +141,14 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         res = '{"tableName" : "marks", "rows" : [["icom","guifre","4"],["dsbm", "victor", "8"]]}'
         eljeison = json.loads(res)
         self.createTable(eljeison["tableName"],eljeison["rows"])
-
+    
+    def onLogOut(self, button):
+        self.parent_window.destroy()
+        win = Window()
+        win.connect("destroy", Gtk.main_quit)
+        win.show()
+        Gtk.main()
+        
         
 if __name__ == "__main__" :
     win = Window()
