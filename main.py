@@ -1,6 +1,6 @@
 import gi, threading, time, requests, json, nfcReader#, i2c !s'ha de treure el json
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk,Gdk
+from gi.repository import GLib,Gtk,Gdk
 
 user = {
     "uid" : "00000000",
@@ -31,16 +31,18 @@ class Window(Gtk.Window) :
         
     def httpThread(self, query, table):
         res = requests.get("http://188.166.21.177:5000/" + query)
-        rows = '{"tableName" : "timetables", "rows" : [["div","8:00","DSBM","a4007"],["div","8:00","DSBM","a4007"],["div","8:00","DSBM","a4007"]]}'
-        rowsj = json.loads(rows)
         print("http://188.166.21.177:5000/" + query)
         print(res.json())
-        if(table): self.query.createTable(rowsj["tableName"],rowsj["rows"])
+        if(table): GLib.idle_add(self.query.createTable, res.json()["tableName"], res.json()["rows"])
         else:
             global user
-            #user["name"] = "null"
             user["name"] = res.json()["name"]
-            self.query.studentName.set_label = user["name"]
+            if(user["name"] != "null") :
+                GLib.idle_add(self.hide)
+                GLib.idle_add(self.parent_window.query.show_all)
+            else:
+                GLib.idle_add(self.login.set_label, "Your ID is not in our list. Please try again")
+                GLib.idle_add(self.login.set_name, "loginError")
         # Per fer proves sense server.
         #res = '{"tableName" : "marks", "rows" : [["icom","guifre","4"],["dsbm", "victor", "8"]]}'
         #eljeison = json.loads(res)
@@ -56,12 +58,12 @@ class Login(Gtk.Box):
         
         self.login=Gtk.Button(label="Please, login with your university card")
         self.entry = Gtk.Entry()
-        self.entry.connect("activate", self.onProva)
+        self.entry.connect("activate", self.onLogin)
         
         self.login.set_name("login")
         self.login.set_property("width-request", 200)
         self.login.set_property("height-request", 50)
-        self.login.connect("clicked", self.onProva)#per fer proves sense nfc
+        self.login.connect("clicked", self.onLogin)#per fer proves sense nfc
         self.vBox.pack_start(self.login,True,False,0)
         self.vBox.pack_start(self.entry,True,False,0)
 
@@ -69,20 +71,23 @@ class Login(Gtk.Box):
         self.button = Gtk.Button(label="Error")
         self.button.connect("clicked", self.onError)
         self.vBox.pack_start(self.button,True,True,6)
-        #threading.Thread(target=self.nfcThread, daemon=True).start()
+        threading.Thread(target=self.nfcThread, daemon=True).start()
         
         
         
         
-    def onProva(self, widget) :
+    def onLogin(self, widget) :
+        global user
         user["uid"] = self.entry.get_text()
-        self.parent_window.httpThread("login?student_id=" + user["uid"], False)
-        if(user["name"] != "null") :
-            self.hide()
-            self.parent_window.query.show_all()
-        else:
-            self.login.set_label("Your ID is not in our list. Please try again")
-            self.login.set_name("loginError")
+        # self.parent_window.httpThread("login?student_id=" + user["uid"], False)
+        # if(user["name"] != "null") :
+        #     self.hide()
+        #     self.parent_window.query.show_all()
+        # else:
+        #     self.login.set_label("Your ID is not in our list. Please try again")
+        #     self.login.set_name("loginError")
+        threading.Thread(target=self.parent_window.httpThread, args=["login?student_id=" + user["uid"], False], daemon = True).start()
+        #self.parent_window.httpThread(self.entry.get_text(), True)
         #això és per fer proves i s'haurà de canviar per la lectura del nfc
 #      i2c.lcd_display_string("Welcome"+student_name)
 #         self.hide()
@@ -90,6 +95,7 @@ class Login(Gtk.Box):
 #         thread = threading.Thread(target=self.parent_window.httpThread, args=["login?id=" + self.uid , False])
 #         thread.daemon = True
 #         thread.start()
+
     
     def onError(self,button) :
         pass
@@ -98,21 +104,20 @@ class Login(Gtk.Box):
     
     
     def nfcThread(self) :
-        pass
-#        rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
-#        while(1) :
-#            global user
-#            user["uid"] = rf.read_uid()
-#            self.parent_window.httpThread("login?id=" + user["uid"], False) 
-#            if(user["name"] != "null") :
-#                self.hide()
-#                self.parent_window.query.show_all()
-#                break
-#            else:
-#                self.login.set_label("Your ID is not in our list. Please try again")
-#                self.login.set_name("loginError")
-#                print("hola")
-#                time.sleep(2)
+       rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
+       while(True) :
+           global user
+           user["uid"] = rf.read_uid()
+           self.parent_window.httpThread("login?id=" + user["uid"], False) 
+           if(user["name"] != "null") :
+               self.hide()
+               self.parent_window.query.show_all()
+               break
+           else:
+               self.login.set_label("Your ID is not in our list. Please try again")
+               self.login.set_name("loginError")
+               print("hola")
+               time.sleep(2)
         
         
 class Query(Gtk.Box):#aqui tot per fer consultes
@@ -177,10 +182,10 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         
         
     def processQuery(self, widget):
-        #thread = threading.Thread(target=self.parent_window.httpThread, args=[self.entry.get_text(), True])
-        self.parent_window.httpThread(self.entry.get_text(), True)
-        #thread.daemon = True
-        #thread.start()
+        thread = threading.Thread(target=self.parent_window.httpThread, args=[self.entry.get_text(), True])
+        #self.parent_window.httpThread(self.entry.get_text(), True)
+        thread.daemon = True
+        thread.start()
         
     
     
