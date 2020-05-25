@@ -1,7 +1,11 @@
-import gi, threading, time, requests, json#, nfcReader, i2c
+import gi, threading, time, requests, json, nfcReader#, i2c !s'ha de treure el json
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk,Gdk
 
+user = {
+    "uid" : "00000000",
+    "name" : "null"
+    }
 
 class Window(Gtk.Window) :
     def __init__(self) :
@@ -23,6 +27,24 @@ class Window(Gtk.Window) :
             Gdk.Screen.get_default(), self.style_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
+        
+        
+    def httpThread(self, query, table):
+        res = requests.get("http://188.166.21.177:5000/" + query)
+        rows = '{"tableName" : "timetables", "rows" : [["div","8:00","DSBM","a4007"],["div","8:00","DSBM","a4007"],["div","8:00","DSBM","a4007"]]}'
+        rowsj = json.loads(rows)
+        print("http://188.166.21.177:5000/" + query)
+        print(res.json())
+        if(table): self.query.createTable(rowsj["tableName"],rowsj["rows"])
+        else:
+            global user
+            #user["name"] = "null"
+            user["name"] = res.json()["name"]
+            self.query.studentName.set_label = user["name"]
+        # Per fer proves sense server.
+        #res = '{"tableName" : "marks", "rows" : [["icom","guifre","4"],["dsbm", "victor", "8"]]}'
+        #eljeison = json.loads(res)
+#         self.createTable(eljeison["tableName"],eljeison["rows"])
 
 class Login(Gtk.Box):
     def __init__(self, parent_window):
@@ -33,39 +55,65 @@ class Login(Gtk.Box):
         self.pack_start(self.vBox, True, False, 50)
         
         self.login=Gtk.Button(label="Please, login with your university card")
+        self.entry = Gtk.Entry()
+        self.entry.connect("activate", self.onProva)
+        
         self.login.set_name("login")
         self.login.set_property("width-request", 200)
         self.login.set_property("height-request", 50)
         self.login.connect("clicked", self.onProva)#per fer proves sense nfc
         self.vBox.pack_start(self.login,True,False,0)
+        self.vBox.pack_start(self.entry,True,False,0)
 
         #aixo quan hi ha el nfc no es posa
         self.button = Gtk.Button(label="Error")
         self.button.connect("clicked", self.onError)
         self.vBox.pack_start(self.button,True,True,6)
-        
-        
-        
-    def onProva(self, button) :#això és per fer proves i s'haurà de canviar per la lectura del nfc
-#      i2c.lcd_display_string("Welcome"+student_name)
-        self.hide()
-        self.parent_window.query.show_all()
-    
-    def onError(self,button) :
-        self.login.set_label("Your ID is not in our list. Please try again")
-        self.login.set_name('loginError')
         #threading.Thread(target=self.nfcThread, daemon=True).start()
         
+        
+        
+        
+    def onProva(self, widget) :
+        user["uid"] = self.entry.get_text()
+        self.parent_window.httpThread("login?student_id=" + user["uid"], False)
+        if(user["name"] != "null") :
+            self.hide()
+            self.parent_window.query.show_all()
+        else:
+            self.login.set_label("Your ID is not in our list. Please try again")
+            self.login.set_name("loginError")
+        #això és per fer proves i s'haurà de canviar per la lectura del nfc
+#      i2c.lcd_display_string("Welcome"+student_name)
+#         self.hide()
+#         self.parent_window.query.show_all()
+#         thread = threading.Thread(target=self.parent_window.httpThread, args=["login?id=" + self.uid , False])
+#         thread.daemon = True
+#         thread.start()
     
-#    def nfcThread(self) :  
+    def onError(self,button) :
+        pass
+#         self.login.set_label("Your ID is not in our list. Please try again")
+#         self.login.set_name("loginError")
+    
+    
+    def nfcThread(self) :
+        pass
 #        rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
-#        if rf.read_uid().isIn(student):#encara no se com sera la bd
-#           self.hide()
-#           self.parent_window.query.show_all()
-#        else:
-#           self.login.set_label("Your ID is not in our list. Please try again")
-#           self.login.set_name('loginError')
-#           threading.Thread(target=self.nfcThread, daemon=True).start()
+#        while(1) :
+#            global user
+#            user["uid"] = rf.read_uid()
+#            self.parent_window.httpThread("login?id=" + user["uid"], False) 
+#            if(user["name"] != "null") :
+#                self.hide()
+#                self.parent_window.query.show_all()
+#                break
+#            else:
+#                self.login.set_label("Your ID is not in our list. Please try again")
+#                self.login.set_name("loginError")
+#                print("hola")
+#                time.sleep(2)
+        
         
 class Query(Gtk.Box):#aqui tot per fer consultes
     def __init__(self, parent_window):
@@ -75,7 +123,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         self.hBox = Gtk.HBox(spacing=5)
         self.add(self.hBox)
         self.label = Gtk.Label(label="Welcome", xalign=0)
-        self.studentName = Gtk.Label(label="Marina Preciosa")
+        self.studentName = Gtk.Label(label = "")
         self.studentName.set_name('studentName')
         self.hBox.pack_start(self.label, False, True, 0)
         self.hBox.pack_start(self.studentName, False, True, 0)
@@ -129,18 +177,12 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         
         
     def processQuery(self, widget):
-        thread = threading.Thread(target=self.httpThread)
-        thread.daemon = True
-        thread.start()
+        #thread = threading.Thread(target=self.parent_window.httpThread, args=[self.entry.get_text(), True])
+        self.parent_window.httpThread(self.entry.get_text(), True)
+        #thread.daemon = True
+        #thread.start()
         
-    def httpThread(self):
-#         res = requests.get("https://<server_nostre>/" + self.entry.get_text())
-#         self.createTable(self,res.json()["tableName"],res.json()["rows"])
-
-        # Per fer proves sense server.
-        res = '{"tableName" : "marks", "rows" : [["icom","guifre","4"],["dsbm", "victor", "8"]]}'
-        eljeison = json.loads(res)
-        self.createTable(eljeison["tableName"],eljeison["rows"])
+    
     
     def onLogOut(self, button):
         self.parent_window.destroy()
