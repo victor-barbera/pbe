@@ -38,8 +38,8 @@ class Window(Gtk.Window) :
             global user
             user["name"] = res.json()["name"]
             if(user["name"] != "null") :
-                GLib.idle_add(self.hide)
-                GLib.idle_add(self.parent_window.query.show_all)
+                GLib.idle_add(self.login.hide)
+                GLib.idle_add(self.query.show_all)
             else:
                 GLib.idle_add(self.login.set_label, "Your ID is not in our list. Please try again")
                 GLib.idle_add(self.login.set_name, "loginError")
@@ -86,7 +86,7 @@ class Login(Gtk.Box):
         # else:
         #     self.login.set_label("Your ID is not in our list. Please try again")
         #     self.login.set_name("loginError")
-        threading.Thread(target=self.parent_window.httpThread, args=["login?student_id=" + user["uid"], False], daemon = True).start()
+        threading.Thread(target=self.parent_window.httpThread, args=("login?student_id=" + user["uid"], False), daemon = True).start()
         #self.parent_window.httpThread(self.entry.get_text(), True)
         #això és per fer proves i s'haurà de canviar per la lectura del nfc
 #      i2c.lcd_display_string("Welcome"+student_name)
@@ -104,20 +104,10 @@ class Login(Gtk.Box):
     
     
     def nfcThread(self) :
-       rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
-       while(True) :
-           global user
-           user["uid"] = rf.read_uid()
-           self.parent_window.httpThread("login?id=" + user["uid"], False) 
-           if(user["name"] != "null") :
-               self.hide()
-               self.parent_window.query.show_all()
-               break
-           else:
-               self.login.set_label("Your ID is not in our list. Please try again")
-               self.login.set_name("loginError")
-               print("hola")
-               time.sleep(2)
+        rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
+        global user
+        user["uid"] = rf.read_uid()
+        threading.Thread(target=self.parent_window.httpThread, args=("login?student_id=" + user["uid"], False), daemon = True).start()
         
         
 class Query(Gtk.Box):#aqui tot per fer consultes
@@ -153,11 +143,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         if(tableName == "marks"):
             columns = ["subject", "name", "mark"]
             listmodel = Gtk.ListStore(str, str, str)
-#             {"tableName" : "timetables",
-#              "rows" : [
-#                 ["icom","guifre","4"],
-#                 ["dsbm", "victor", "8"]
-#             ]}
+            
         # append the values in the model
         for i in range(len(rows)):
             listmodel.append(rows[i])
@@ -182,10 +168,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         
         
     def processQuery(self, widget):
-        thread = threading.Thread(target=self.parent_window.httpThread, args=[self.entry.get_text(), True])
-        #self.parent_window.httpThread(self.entry.get_text(), True)
-        thread.daemon = True
-        thread.start()
+        threading.Thread(target=self.parent_window.httpThread, args=[self.entry.get_text(), True], daemon=True).start()
         
     
     
