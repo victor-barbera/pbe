@@ -1,4 +1,4 @@
-import gi, threading, time, requests, json, nfcReader#, i2c !s'ha de treure el json
+import gi, threading, time, requests, json#, nfcReader#, i2c !s'ha de treure el json
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk,Gdk
 
@@ -11,7 +11,7 @@ class Window(Gtk.Window) :
     def __init__(self) :
         Gtk.Window.__init__(self, title="MIRO CONNECTIVITY")
         self.set_default_size(500, 300)
-        container=Gtk.Box()
+        container=Gtk.Box(spacing=6)
         self.add(container)
         container.show()
         
@@ -31,16 +31,17 @@ class Window(Gtk.Window) :
         
     def httpThread(self, query, table):
         res = requests.get("http://188.166.21.177:5000/" + query)
-        rows = '{"tableName" : "timetables", "rows" : [["div","8:00","DSBM","a4007"],["div","8:00","DSBM","a4007"],["div","8:00","DSBM","a4007"]]}'
-        rowsj = json.loads(rows)
+#        rows = '{"tableName" : "timetables", "rows" : [["div","8:00","DSBM","a4007"],["div","8:00","DSBM","a4007"],["div","8:00","DSBM","a4007"]]}'
+#        rowsj = json.loads(rows)
         print("http://188.166.21.177:5000/" + query)
         print(res.json())
-        if(table): self.query.createTable(rowsj["tableName"],rowsj["rows"])
+        if(table): self.query.createTable(res.json()["tableName"],res.json()["rows"])
         else:
             global user
             #user["name"] = "null"
             user["name"] = res.json()["name"]
-            self.query.studentName.set_label = user["name"]
+            self.query.studentName.set_text(user['name'])
+
         # Per fer proves sense server.
         #res = '{"tableName" : "marks", "rows" : [["icom","guifre","4"],["dsbm", "victor", "8"]]}'
         #eljeison = json.loads(res)
@@ -123,7 +124,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         self.hBox = Gtk.HBox(spacing=5)
         self.add(self.hBox)
         self.label = Gtk.Label(label="Welcome", xalign=0)
-        self.studentName = Gtk.Label(label = "")
+        self.studentName = Gtk.Label(label=user['name'])
         self.studentName.set_name('studentName')
         self.hBox.pack_start(self.label, False, True, 0)
         self.hBox.pack_start(self.studentName, False, True, 0)
@@ -136,8 +137,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         #self.entry.set_text("table?constraint&constraint..")#aqui podem ficar el format que volem
         self.add(self.entry)
         self.entry.connect("activate", self.processQuery)
-        
-        
+    
     def createTable(self, tableName, rows) :
         if(tableName == "timetables") :
             columns = ["day", "hour", "subject", "room"]
@@ -147,7 +147,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
             listmodel = Gtk.ListStore(str, str, str)
         if(tableName == "marks"):
             columns = ["subject", "name", "mark"]
-            listmodel = Gtk.ListStore(str, str, str)
+            listmodel = Gtk.ListStore(str, str, float)
 #             {"tableName" : "timetables",
 #              "rows" : [
 #                 ["icom","guifre","4"],
@@ -158,6 +158,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
             listmodel.append(rows[i])
         # a treeview to see the data stored in the model
         self.view = Gtk.TreeView(model=listmodel)
+        print(self.view)
         self.view.set_hexpand(True)
         # for each column
         for i, column in enumerate(columns):
