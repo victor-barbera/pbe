@@ -1,4 +1,4 @@
-import gi, threading, time, requests, json, nfcReader#, i2c !s'ha de treure el json
+import gi, threading, time, requests#, json, nfcReader#, i2c !s'ha de treure el json
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib,Gtk,Gdk
 
@@ -11,7 +11,7 @@ class Window(Gtk.Window) :
     def __init__(self) :
         Gtk.Window.__init__(self, title="MIRO CONNECTIVITY")
         self.set_default_size(500, 300)
-        container=Gtk.Box()
+        container=Gtk.Box(spacing=6)
         self.add(container)
         container.show()
         
@@ -38,15 +38,13 @@ class Window(Gtk.Window) :
             global user
             user["name"] = res.json()["name"]
             if(user["name"] != "null") :
+                GLib.idle_add(self.query.studentName.set_text, user["name"])
                 GLib.idle_add(self.login.hide)
                 GLib.idle_add(self.query.show_all)
             else:
-                GLib.idle_add(self.login.set_label, "Your ID is not in our list. Please try again")
+                GLib.idle_add(self.login.set_text, "Your ID is not in our list. Please try again")
                 GLib.idle_add(self.login.set_name, "loginError")
-        # Per fer proves sense server.
-        #res = '{"tableName" : "marks", "rows" : [["icom","guifre","4"],["dsbm", "victor", "8"]]}'
-        #eljeison = json.loads(res)
-#         self.createTable(eljeison["tableName"],eljeison["rows"])
+
 
 class Login(Gtk.Box):
     def __init__(self, parent_window):
@@ -118,7 +116,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         self.hBox = Gtk.HBox(spacing=5)
         self.add(self.hBox)
         self.label = Gtk.Label(label="Welcome", xalign=0)
-        self.studentName = Gtk.Label(label = "")
+        self.studentName = Gtk.Label(label = user["name"])
         self.studentName.set_name('studentName')
         self.hBox.pack_start(self.label, False, True, 0)
         self.hBox.pack_start(self.studentName, False, True, 0)
@@ -142,7 +140,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
             listmodel = Gtk.ListStore(str, str, str)
         if(tableName == "marks"):
             columns = ["subject", "name", "mark"]
-            listmodel = Gtk.ListStore(str, str, str)
+            listmodel = Gtk.ListStore(str, str, float)
             
         # append the values in the model
         for i in range(len(rows)):
