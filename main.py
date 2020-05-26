@@ -1,10 +1,10 @@
-import gi, threading, time, requests#, json, nfcReader#, i2c !s'ha de treure el json
+import gi, threading, time, requests, nfcReader#, json, nfcReader#, i2c !s'ha de treure el json
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib,Gtk,Gdk
 
 user = {
-    "uid" : "00000000",
-    "name" : "null"
+    "uid" : "",
+    "name" : ""
     }
 
 class Window(Gtk.Window) :
@@ -33,19 +33,19 @@ class Window(Gtk.Window) :
         res = requests.get("http://188.166.21.177:5000/" + query)
         print("http://188.166.21.177:5000/" + query)
         print(res.json())
-        if(action == "table"): 
-            if(res.json()["message"] == "Success"): GLib.idle_add(self.query.createTable, res.json()["tableName"], res.json()["rows"])
+        if(action == "table"):
+            if(res.json()["message"] == "success"): GLib.idle_add(self.query.createTable, res.json()["tableName"], res.json()["rows"])
             #else imprimir res.json()["message"]
         if(action == "login"):
             global user
             user["name"] = res.json()["name"]
-            if(user["name"] != "null") :
+            if user["name"] is not None:
                 GLib.idle_add(self.query.studentName.set_text, user["name"])
                 GLib.idle_add(self.login.hide)
                 GLib.idle_add(self.query.show_all)
             else:
-                GLib.idle_add(self.login.set_text, "Your ID is not in our list. Please try again")
-                GLib.idle_add(self.login.set_name, "loginError")
+                GLib.idle_add(self.login.label.set_name, "loginError")
+                GLib.idle_add(self.login.label.set_text, "Your ID is not in our list. Please try again")
 
 
 class Login(Gtk.Box):
@@ -56,21 +56,16 @@ class Login(Gtk.Box):
         self.vBox = Gtk.VBox(spacing=50)
         self.pack_start(self.vBox, True, False, 50)
         
-        self.login=Gtk.Button(label="Please, login with your university card")
+        self.label=Gtk.Label(label="Please, login with your university card")
         self.entry = Gtk.Entry()
         self.entry.connect("activate", self.onLogin)
         
-        self.login.set_name("login")
-        self.login.set_property("width-request", 200)
-        self.login.set_property("height-request", 50)
-        self.login.connect("clicked", self.onLogin)#per fer proves sense nfc
-        self.vBox.pack_start(self.login,True,False,0)
+        self.label.set_name("login")
+        self.label.set_property("width-request", 200)
+        self.label.set_property("height-request", 50)
+        self.vBox.pack_start(self.label,True,False,0)
         self.vBox.pack_start(self.entry,True,False,0)
 
-        #aixo quan hi ha el nfc no es posa
-        self.button = Gtk.Button(label="Error")
-        self.button.connect("clicked", self.onError)
-        self.vBox.pack_start(self.button,True,True,6)
         threading.Thread(target=self.nfcThread, daemon=True).start()
         
         
@@ -95,12 +90,6 @@ class Login(Gtk.Box):
 #         thread = threading.Thread(target=self.parent_window.httpThread, args=["login?id=" + self.uid , False])
 #         thread.daemon = True
 #         thread.start()
-
-    
-    def onError(self,button) :
-        pass
-#         self.login.set_label("Your ID is not in our list. Please try again")
-#         self.login.set_name("loginError")
     
     
     def nfcThread(self) :
