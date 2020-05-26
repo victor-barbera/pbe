@@ -1,4 +1,4 @@
-import gi, threading, time, requests, nfcReader, json#, RPi_I2C_driver
+import gi, threading, time, requests, nfcReader#, RPi_I2C_driver
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib,Gtk,Gdk
 
@@ -6,12 +6,6 @@ user = {
     "uid" : "",
     "name" : ""
     }
-table = {
-    "rows" : [],
-    "name" : "",
-    "buffer" : 0
-    }
-
 
 class Window(Gtk.Window) :
     def __init__(self) :
@@ -20,7 +14,6 @@ class Window(Gtk.Window) :
         container=Gtk.Box(spacing=6)
         self.add(container)
         container.show()
-        
         
         self.login=Login(self)
         self.query=Query(self)
@@ -36,20 +29,13 @@ class Window(Gtk.Window) :
         )
         
         
-        
     def httpThread(self, query, action):
         res = requests.get("http://188.166.21.177:5000/" + query)
         print("http://188.166.21.177:5000/" + query)
         print(res.json())
         if(action == "table"):
-            if(res.json()["message"] == "success"):
-                global table
-                table["name"] = res.json()["tableName"]
-                table["rows"] = res.json()["rows"]
-            else:
-                table["name"] = res.json()["message"]
-                table["rows"] = []
-            GLib.idle_add(self.query.createTable)
+            if(res.json()["message"] == "success"): GLib.idle_add(self.query.createTable, res.json()["tableName"], res.json()["rows"])
+            #else imprimir res.json()["message"]
         if(action == "login"):
             global user
             user["name"] = res.json()["name"]
@@ -75,7 +61,7 @@ class Login(Gtk.Box):
         
         self.label=Gtk.Label(label="Please, login with your university card")
         self.label.set_name("login")
-        self.label.set_property("width-request", 200)
+        self.label.set_property("width-request", 300)
         self.label.set_property("height-request", 50)
         self.vBox.pack_start(self.label,True,False,0)
         
@@ -144,30 +130,22 @@ class Query(Gtk.Box):#aqui tot per fer consultes
 
         self.view = Gtk.TreeView()
         self.table=Gtk.Label()
-   
         
         
-    def createTable(self) :
-        global table
-        tableName = table["name"]
-        rows = table["rows"]
+    def createTable(self, tableName, rows) :
         self.table = Gtk.Label(label=tableName)
         self.table.set_name("Name")
         self.add(self.table)
+
         if(tableName == "timetables") :
             columns = ["day", "hour", "subject", "room"]
             listmodel = Gtk.ListStore(str, str, str, str)
-        elif(tableName == "tasks"):
+        if(tableName == "tasks"):
             columns = ["date", "subject", "name"]
             listmodel = Gtk.ListStore(str, str, str)
-        elif(tableName == "marks"):
+        if(tableName == "marks"):
             columns = ["subject", "name", "mark"]
             listmodel = Gtk.ListStore(str, str, float)
-        elif(tableName != ""):
-           self.show_all()
-           table["name"] = ""
-           return
-        else: return
             
         # append the values in the model
         for i in range(len(rows)):
@@ -187,8 +165,6 @@ class Query(Gtk.Box):#aqui tot per fer consultes
             self.view.append_column(col)
         self.add(self.view)
         self.show_all()
-        table["name"] = ""
-        table["rows"] = []
         
         
     def processQuery(self, widget):
