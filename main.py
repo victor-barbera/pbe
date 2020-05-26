@@ -29,12 +29,14 @@ class Window(Gtk.Window) :
         )
         
         
-    def httpThread(self, query, table):
+    def httpThread(self, query, action):
         res = requests.get("http://188.166.21.177:5000/" + query)
         print("http://188.166.21.177:5000/" + query)
         print(res.json())
-        if(table): GLib.idle_add(self.query.createTable, res.json()["tableName"], res.json()["rows"])
-        else:
+        if(action == "table"): 
+            if(res.json()["message"] == "Success"): GLib.idle_add(self.query.createTable, res.json()["tableName"], res.json()["rows"])
+            #else imprimir res.json()["message"]
+        if(action == "login"):
             global user
             user["name"] = res.json()["name"]
             if(user["name"] != "null") :
@@ -84,7 +86,7 @@ class Login(Gtk.Box):
         # else:
         #     self.login.set_label("Your ID is not in our list. Please try again")
         #     self.login.set_name("loginError")
-        threading.Thread(target=self.parent_window.httpThread, args=("login?student_id=" + user["uid"], False), daemon = True).start()
+        threading.Thread(target=self.parent_window.httpThread, args=("login?student_id=" + user["uid"], "login"), daemon = True).start()
         #self.parent_window.httpThread(self.entry.get_text(), True)
         #això és per fer proves i s'haurà de canviar per la lectura del nfc
 #      i2c.lcd_display_string("Welcome"+student_name)
@@ -105,7 +107,7 @@ class Login(Gtk.Box):
         rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
         global user
         user["uid"] = rf.read_uid()
-        threading.Thread(target=self.parent_window.httpThread, args=("login?student_id=" + user["uid"], False), daemon = True).start()
+        threading.Thread(target=self.parent_window.httpThread, args=("login?student_id=" + user["uid"], "login"), daemon = True).start()
         
         
 class Query(Gtk.Box):#aqui tot per fer consultes
@@ -166,11 +168,12 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         
         
     def processQuery(self, widget):
-        threading.Thread(target=self.parent_window.httpThread, args=[self.entry.get_text(), True], daemon=True).start()
+        threading.Thread(target=self.parent_window.httpThread, args=(self.entry.get_text(), "table"), daemon=True).start()
         
     
     
     def onLogOut(self, button):
+        threading.Thread(target=self.parent_window.httpThread, args=("logout", "logout"), daemon=True).start()
         self.parent_window.destroy()
         win = Window()
         win.connect("destroy", Gtk.main_quit)
@@ -182,6 +185,5 @@ if __name__ == "__main__" :
     win = Window()
     win.connect("destroy", Gtk.main_quit)
     win.show()
-    #threading.Thread(target=win.nfcThread, daemon=True).start()
     Gtk.main()
     
