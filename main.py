@@ -1,4 +1,4 @@
-import gi, threading, time, requests, nfcReader#, json, nfcReader#, i2c !s'ha de treure el json
+import gi, threading, time, requests, nfcReader, RPi_I2C_driver
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib,Gtk,Gdk
 
@@ -41,6 +41,9 @@ class Window(Gtk.Window) :
             user["name"] = res.json()["name"]
             if user["name"] is not None:
                 GLib.idle_add(self.query.studentName.set_text, user["name"])
+                # GLib.idle_add(self.login.l.lcd_clear()
+                # GLib.idle_add(self.login.l.lcd_display_string_pos("Welcome",2,6)
+                # GLib.idle_add(self.login.l.lcd_display_string_pos(user["name"],3,3)
                 GLib.idle_add(self.login.hide)
                 GLib.idle_add(self.query.show_all)
             else:
@@ -57,20 +60,23 @@ class Login(Gtk.Box):
         self.pack_start(self.vBox, True, False, 50)
         
         self.label=Gtk.Label(label="Please, login with your university card")
-        self.entry = Gtk.Entry()
-        self.entry.connect("activate", self.onLogin)
-        
         self.label.set_name("login")
         self.label.set_property("width-request", 200)
         self.label.set_property("height-request", 50)
         self.vBox.pack_start(self.label,True,False,0)
+        
+        self.entry = Gtk.Entry()
+        self.entry.connect("activate", self.onLogin)
         self.vBox.pack_start(self.entry,True,False,0)
 
+        # self.l=RPi_I2C_driver.lcd()
+        # self.l.lcd_display_string_pos("Please, login with",2,1)
+        # self.l.lcd_display_string("your university card",3)
+        
         threading.Thread(target=self.nfcThread, daemon=True).start()
         
         
-        
-        
+ 
     def onLogin(self, widget) :
         global user
         user["uid"] = self.entry.get_text()
@@ -108,21 +114,29 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         self.add(self.hBox)
         self.label = Gtk.Label(label="Welcome", xalign=0)
         self.studentName = Gtk.Label(label = user["name"])
-        self.studentName.set_name('studentName')
+        self.studentName.set_name('Name')
         self.hBox.pack_start(self.label, False, True, 0)
         self.hBox.pack_start(self.studentName, False, True, 0)
+
         self.button = Gtk.Button(label="Log Out")
         self.button.connect("clicked", self.onLogOut)
         self.hBox.add(self.button)
         self.hBox.set_child_packing(self.button,False,True,0,1)
+
         self.entry = Gtk.Entry()
-        self.entry.set_has_frame(True)
-        #self.entry.set_text("table?constraint&constraint..")#aqui podem ficar el format que volem
+
         self.add(self.entry)
         self.entry.connect("activate", self.processQuery)
+
+        self.view = Gtk.TreeView()
+        self.table=Gtk.Label()
         
         
     def createTable(self, tableName, rows) :
+        self.table = Gtk.Label(label=tableName)
+        self.table.set_name("Name")
+        self.add(self.table)
+
         if(tableName == "timetables") :
             columns = ["day", "hour", "subject", "room"]
             listmodel = Gtk.ListStore(str, str, str, str)
@@ -139,6 +153,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         # a treeview to see the data stored in the model
         self.view = Gtk.TreeView(model=listmodel)
         self.view.set_hexpand(True)
+        self.view.set_grid_lines(1)
         # for each column
         for i, column in enumerate(columns):
             # cellrenderer to render the text
@@ -148,15 +163,13 @@ class Query(Gtk.Box):#aqui tot per fer consultes
             col.set_expand(True)
             # and it is appended to the treeview
             self.view.append_column(col)
-        self.grid = Gtk.Grid()
-        self.add(self.grid)
-        self.grid.attach(self.view, 0, 0, 1, 1)
-        
-        #grid.attach(self.label, 0, 1, 1, 1)   
-        self.grid.show_all()
+        self.add(self.view)
+        self.show_all()
         
         
     def processQuery(self, widget):
+        self.remove(self.view)
+        self.remove(self.table)
         threading.Thread(target=self.parent_window.httpThread, args=(self.entry.get_text(), "table"), daemon=True).start()
         
     
