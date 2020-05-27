@@ -1,4 +1,4 @@
-import gi, threading, time, requests, nfcReader, json#, RPi_I2C_driver
+import gi, threading, time, requests#, nfcReader, RPi_I2C_driver
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib,Gtk,Gdk
 
@@ -9,7 +9,6 @@ user = {
 table = {
     "rows" : [],
     "name" : "",
-    "buffer" : 0
     }
 
 
@@ -20,7 +19,6 @@ class Window(Gtk.Window) :
         container=Gtk.Box(spacing=6)
         self.add(container)
         container.show()
-        
         
         self.login=Login(self)
         self.query=Query(self)
@@ -55,9 +53,7 @@ class Window(Gtk.Window) :
             user["name"] = res.json()["name"]
             if user["name"] is not None:
                 GLib.idle_add(self.query.studentName.set_text, user["name"])
-                # GLib.idle_add(self.login.l.lcd_clear()
-                # GLib.idle_add(self.login.l.lcd_display_string_pos("Welcome",2,6)
-                # GLib.idle_add(self.login.l.lcd_display_string_pos(user["name"],3,3)
+                #threading.Thread(target=self.login.lcdThread, daemon=True).start()  
                 GLib.idle_add(self.login.hide)
                 GLib.idle_add(self.query.show_all)
             else:
@@ -89,29 +85,16 @@ class Login(Gtk.Box):
         
         threading.Thread(target=self.nfcThread, daemon=True).start()
         
-        
- 
     def onLogin(self, widget) :
         global user
         user["uid"] = self.entry.get_text()
-        # self.parent_window.httpThread("login?student_id=" + user["uid"], False)
-        # if(user["name"] != "null") :
-        #     self.hide()
-        #     self.parent_window.query.show_all()
-        # else:
-        #     self.login.set_label("Your ID is not in our list. Please try again")
-        #     self.login.set_name("loginError")
         threading.Thread(target=self.parent_window.httpThread, args=("login?student_id=" + user["uid"], "login"), daemon = True).start()
-        #self.parent_window.httpThread(self.entry.get_text(), True)
-        #això és per fer proves i s'haurà de canviar per la lectura del nfc
-#      i2c.lcd_display_string("Welcome"+student_name)
-#         self.hide()
-#         self.parent_window.query.show_all()
-#         thread = threading.Thread(target=self.parent_window.httpThread, args=["login?id=" + self.uid , False])
-#         thread.daemon = True
-#         thread.start()
     
-    
+    def lcdThread(self):
+        self.l.lcd_clear()
+        self.l.lcd_display_string_pos("Welcome",2,6)
+        self.l.lcd_display_string_pos(user["name"],3,3)
+
     def nfcThread(self) :
         rf = nfcReader.Rfid_reader("pn532_i2c:/dev/i2c-1")
         global user
@@ -119,7 +102,7 @@ class Login(Gtk.Box):
         threading.Thread(target=self.parent_window.httpThread, args=("login?student_id=" + user["uid"], "login"), daemon = True).start()
         
         
-class Query(Gtk.Box):#aqui tot per fer consultes
+class Query(Gtk.Box):
     def __init__(self, parent_window):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=30)
         self.parent_window = parent_window
@@ -144,9 +127,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
 
         self.view = Gtk.TreeView()
         self.table=Gtk.Label()
-   
-        
-        
+
     def createTable(self) :
         global table
         tableName = table["name"]
@@ -189,15 +170,12 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         self.show_all()
         table["name"] = ""
         table["rows"] = []
-        
-        
+           
     def processQuery(self, widget):
         self.remove(self.view)
         self.remove(self.table)
         threading.Thread(target=self.parent_window.httpThread, args=(self.entry.get_text(), "table"), daemon=True).start()
-        
-    
-    
+           
     def onLogOut(self, button):
         threading.Thread(target=self.parent_window.httpThread, args=("logout", "logout"), daemon=True).start()
         self.parent_window.destroy()
@@ -206,6 +184,7 @@ class Query(Gtk.Box):#aqui tot per fer consultes
         win.show()
         Gtk.main()
         
+   
         
 if __name__ == "__main__" :
     win = Window()
