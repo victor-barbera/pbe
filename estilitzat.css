@@ -11,10 +11,20 @@
 #Name{
 	color:indigo;
  }
+#logOut{
+	background-color: indigo;
+	color:white;
+}
 
-.view{
-	border-radius: 2px;
-	border-color: white;
+#tableHeader{
+	background-color: indigo;
+	color:white;
+}
+#tableContentPair{
+	background-color: ghostWhite;
+	color: black;
+}
+#tableContentOdd{
 	background-color: lavender;
-	color:black;
+	color: black;
 }

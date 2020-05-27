@@ -1,4 +1,4 @@
-import gi, threading, time, requests, nfcReader#, RPi_I2C_driver
+import gi, threading, time, requests, RPi_I2C_driver #nfcReader,
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib,Gtk,Gdk
 
@@ -53,7 +53,7 @@ class Window(Gtk.Window) :
             user["name"] = res.json()["name"]
             if user["name"] is not None:
                 GLib.idle_add(self.query.studentName.set_text, user["name"])
-                #threading.Thread(target=self.login.lcdThread, daemon=True).start()  
+                threading.Thread(target=self.login.lcdThread, daemon=True).start()  
                 GLib.idle_add(self.login.hide)
                 GLib.idle_add(self.query.show_all)
             else:
@@ -71,7 +71,7 @@ class Login(Gtk.Box):
         
         self.label=Gtk.Label(label="Please, login with your university card")
         self.label.set_name("login")
-        self.label.set_property("width-request", 200)
+        self.label.set_property("width-request", 300)
         self.label.set_property("height-request", 50)
         self.vBox.pack_start(self.label,True,False,0)
         
@@ -79,11 +79,11 @@ class Login(Gtk.Box):
         self.entry.connect("activate", self.onLogin)
         self.vBox.pack_start(self.entry,True,False,0)
 
-        # self.l=RPi_I2C_driver.lcd()
-        # self.l.lcd_display_string_pos("Please, login with",2,1)
-        # self.l.lcd_display_string("your university card",3)
+        self.l=RPi_I2C_driver.lcd()
+        self.l.lcd_display_string_pos("Please, login with",2,1)
+        self.l.lcd_display_string("your university card",3)
         
-        threading.Thread(target=self.nfcThread, daemon=True).start()
+        #threading.Thread(target=self.nfcThread, daemon=True).start()
         
     def onLogin(self, widget) :
         global user
@@ -118,6 +118,7 @@ class Query(Gtk.Box):
         self.hBox.pack_start(self.studentName, False, True, 0)
 
         self.button = Gtk.Button(label="Log Out")
+        self.button.set_name("logOut")
         self.button.connect("clicked", self.onLogOut)
         self.hBox.add(self.button)
         self.hBox.set_child_packing(self.button,False,True,0,1)
@@ -128,15 +129,16 @@ class Query(Gtk.Box):
         self.entry.connect("activate", self.processQuery)
 
         self.tableName=Gtk.Label()
-        self.table = Gtk.Label()
-        self.vBox.pack_start(self.tableName,False,True,0)
-
+        self.table = Gtk.Grid(row_spacing=2)
+        self.vBox.pack_start(self.tableName,True,True,0)
+        
     def createTable(self) :
         global table
         self.tableName.set_label(table["name"])
-        self.table = Gtk.VBox(spacing=1)
-        self.table.set_name("Name")
-        self.vBox.pack_start(self.table,False,True, 0)
+        self.tableName.set_name("Name")
+        self.table.set_column_homogeneous(True)
+        self.vBox.pack_start(self.table,True,True, 0)
+        
         if(table["name"] == "timetables") :
             columns = ["day", "hour", "subject", "room"]
             listmodel = Gtk.ListStore(str, str, str, str)
@@ -151,25 +153,23 @@ class Query(Gtk.Box):
            table["name"] = ""
            return
         else: return
-        
-        tableCols = Gtk.HBox(spacing=3)
-        self.table.pack_start(tableCols,False,True,0)
         for i in range(len(columns)):
-            tableCols.pack_start(Gtk.Label(label=columns[i]),False,True,0)
-        fila=[]
+            tableHeader= Gtk.Label(label=columns[i])
+            self.table.attach(tableHeader,i,0,1,1)
+            tableHeader.set_name("tableHeader")
         for i in range(len(table["rows"])):
-            aux = Gtk.HBox(spacing=3)
-            fila.append(aux)
-            self.table.pack_start(fila[i],False,True,0)
             for j in range(len(table["rows"][i])):
-                fila[i].pack_start(Gtk.Label(label=table["rows"][i][j]),False,True,0)
-        self.table.show_all()
+                tableContent=Gtk.Label(label=table["rows"][i][j])
+                if i%2==0: tableContent.set_name("tableContentPair")
+                else: tableContent.set_name("tableContentOdd")
+                
+                self.table.attach(tableContent,j,i+1,1,1)
         table["name"] = ""
         table["rows"] = []
-                
-       
+        self.table.show_all()
+                    
     def processQuery(self, widget):
-        self.remove(self.table)
+        self.table.destroy()
         threading.Thread(target=self.parent_window.httpThread, args=(self.entry.get_text(), "table"), daemon=True).start()
            
     def onLogOut(self, button):
