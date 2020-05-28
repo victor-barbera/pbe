@@ -1,4 +1,4 @@
-import gi, threading, time, requests, RPi_I2C_driver #nfcReader,
+import gi, threading, time, requests, RPi_I2C_driver, nfcReader
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib,Gtk,Gdk
 
@@ -83,7 +83,7 @@ class Login(Gtk.Box):
         self.l.lcd_display_string_pos("Please, login with",2,1)
         self.l.lcd_display_string("your university card",3)
         
-        #threading.Thread(target=self.nfcThread, daemon=True).start()
+        threading.Thread(target=self.nfcThread, daemon=True).start()
         
     def onLogin(self, widget) :
         global user
