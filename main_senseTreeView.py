@@ -141,13 +141,10 @@ class Query(Gtk.Box):
         
         if(table["name"] == "timetables") :
             columns = ["day", "hour", "subject", "room"]
-            listmodel = Gtk.ListStore(str, str, str, str)
         elif(table["name"] == "tasks"):
             columns = ["date", "subject", "name"]
-            listmodel = Gtk.ListStore(str, str, str)
         elif(table["name"] == "marks"):
             columns = ["subject", "name", "mark"]
-            listmodel = Gtk.ListStore(str, str, float)
         elif(table["name"] != ""):
            self.show_all()
            table["name"] = ""
